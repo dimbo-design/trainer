@@ -62,6 +62,8 @@ function init() {
     { id: 'bag', x: 7.6, z: -1.2, r: 1.7, verb: 'ударить' },
     { id: 'cardio', x: 8.6, z: 2.9, r: 1.8, verb: 'на дорожку' },
     { id: 'rest', x: -9.15, z: -0.6, r: 1.5, verb: 'присесть' },
+    { id: 'kb', x: -4.7, z: -2.2, r: 1.5, verb: 'махнуть гирей' },
+    { id: 'mat', x: 3.8, z: 1.4, r: 1.5, verb: 'потянуться' },
     { id: 'trophies', x: 4.6, z: 6.0, r: 1.7, verb: 'посмотреть' },
     { id: 'kitchen', x: -0.5, z: 5.4, r: 1.9, verb: 'изучить' },
     { id: 'board', x: -5.6, z: 6.2, r: 1.6, verb: 'посмотреть' },
@@ -98,7 +100,10 @@ function init() {
   const bagVel = { x: 0, z: 0 };
   let near = null;
 
-  const EXERCISES = { rack: 'squat', bench: 'bench', dumbbells: 'curls', cardio: 'run', rest: 'sit' };
+  const EXERCISES = {
+    rack: 'squat', bench: 'bench', dumbbells: 'curls', cardio: 'run', rest: 'sit',
+    kb: 'swing', mat: 'stretch', kitchen: 'drink',
+  };
 
   function beginExercise(st) {
     saved = { pos: char.root.position.clone(), rot: char.root.rotation.y };
@@ -128,6 +133,17 @@ function init() {
     } else if (exercise.type === 'sit') {
       r.position.set(-9.88, 0, -0.6);
       r.rotation.set(0, Math.PI / 2, 0); // сидит лицом в зал
+    } else if (exercise.type === 'swing') {
+      r.position.set(-4.7, 0, -1.9);
+      r.rotation.set(0, Math.PI, 0); // лицом к гирям и помосту
+      char.setKettlebell(true);
+    } else if (exercise.type === 'stretch') {
+      r.position.set(3.8, 0, 1.15);
+      r.rotation.set(0, 0.35, 0); // сидя вдоль коврика
+    } else if (exercise.type === 'drink') {
+      r.position.set(-0.5, 0, 5.95);
+      r.rotation.set(0, 0, 0); // лицом к барной стойке
+      char.setCup(true);
     }
   }
 
@@ -144,6 +160,8 @@ function init() {
       world.benchBar.rotation.set(0, 0, 0);
     }
     if (exercise.type === 'curls') char.setDumbbells(false);
+    if (exercise.type === 'swing') char.setKettlebell(false);
+    if (exercise.type === 'drink') char.setCup(false);
     char.root.rotation.set(0, saved.rot, 0);
     char.root.position.copy(saved.pos);
     exercise = null;
@@ -252,6 +270,9 @@ function init() {
       else if (exercise.type === 'curls') char.curls((T / 2.1) % 1);
       else if (exercise.type === 'run') char.run(T * 7);
       else if (exercise.type === 'sit') char.sit(t);
+      else if (exercise.type === 'swing') char.swing((T / 1.6) % 1);
+      else if (exercise.type === 'stretch') char.stretch((T / 3.6) % 1);
+      else if (exercise.type === 'drink') char.drink((T / 2.6) % 1);
     } else if (punchT >= 0) {
       punchT += dt;
       const p = punchT / 0.48;

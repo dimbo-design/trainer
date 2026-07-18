@@ -502,6 +502,12 @@ export function buildWorld(scene) {
   }
   collide(-4.7, -2.6, 0.8, 0.3);
 
+  // фитнес-коврик у кардио-зоны (станция: растяжка); плоский — без коллайдера
+  const yoga = box(0.7, 0.025, 1.9, new THREE.MeshStandardMaterial({ color: 0x46604e, roughness: 1 }));
+  yoga.position.set(3.8, 0.013, 1.4);
+  yoga.rotation.y = 0.35;
+  room.add(yoga);
+
   // скамейка для отдыха у окна
   const restBench = new THREE.Group();
   const seatB = box(1.6, 0.08, 0.4, mat.woodLight); seatB.position.y = 0.42; restBench.add(seatB);

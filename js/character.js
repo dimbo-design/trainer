@@ -130,6 +130,25 @@ export function createCharacter() {
     dbProps.push(g);
   }
 
+  // чашка в правом кулаке (бар)
+  const cupProp = new THREE.Group();
+  cupProp.position.y = -0.34;
+  const cupBody = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.1, 12), M.shoe);
+  cupBody.castShadow = true;
+  cupProp.add(cupBody);
+  cupProp.visible = false;
+  arms.R.elbow.add(cupProp);
+
+  // гиря в двух руках (крепится к торсу, руки наводятся позой свинга)
+  const kbProp = new THREE.Group();
+  const kbBody = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), M.hair);
+  kbBody.castShadow = true;
+  const kbHandle = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.022, 8, 16, Math.PI), M.hair);
+  kbHandle.position.y = 0.14;
+  kbProp.add(kbBody, kbHandle);
+  kbProp.visible = false;
+  torso.add(kbProp);
+
   // сброс позы перед применением новой
   function reset() {
     for (const s of ['L', 'R']) {
@@ -148,6 +167,8 @@ export function createCharacter() {
     root, barMount, chestMount, HIP,
 
     setDumbbells(on) { dbProps.forEach((g) => { g.visible = on; }); },
+    setCup(on) { cupProp.visible = on; },
+    setKettlebell(on) { kbProp.visible = on; },
 
     idle(t) {
       reset();
@@ -259,6 +280,62 @@ export function createCharacter() {
       hips.position.y = HIP + Math.abs(Math.sin(phase)) * 0.06;
       torso.rotation.x = 0.14;
       return phase;
+    },
+
+    // s — цикл растяжки [0..1]: сидя на полу, наклон к прямым ногам и обратно
+    stretch(s) {
+      reset();
+      const fold = (1 - Math.cos(s * Math.PI * 2)) / 2;
+      hips.position.y = 0.16;
+      for (const side of ['L', 'R']) {
+        legs[side].thigh.rotation.x = -1.5;  // ноги прямые вперёд по коврику
+        legs[side].shin.rotation.x = 0.05;
+        legs[side].foot.rotation.x = 0.85;   // носки вверх
+        arms[side].shoulder.rotation.x = -0.85 - fold * 0.95; // тянется к стопам
+        arms[side].shoulder.rotation.z = (side === 'L' ? -1 : 1) * 0.12;
+        arms[side].elbow.rotation.x = -0.1;
+      }
+      torso.rotation.x = 0.22 + fold * 0.72;
+      head.rotation.x = -0.25 * fold; // взгляд к стопам, но шея длинная
+      return fold;
+    },
+
+    // s — цикл свинга гирей [0..1]: hip hinge, руки-«верёвки», гиря по дуге
+    swing(s) {
+      reset();
+      const k = (1 - Math.cos(s * Math.PI * 2)) / 2; // 0 — гиря внизу, 1 — на уровне груди
+      const a = 0.25 + k * 1.3;                      // угол рук от вертикали
+      const hinge = 0.55 - k * 0.45;                 // наклон корпуса: больше внизу
+      for (const side of ['L', 'R']) {
+        arms[side].shoulder.rotation.x = -a;
+        arms[side].shoulder.rotation.z = (side === 'L' ? -1 : 1) * 0.1;
+        arms[side].elbow.rotation.x = -0.05;
+        legs[side].thigh.rotation.x = -hinge * 0.75;
+        legs[side].shin.rotation.x = hinge * 0.85;
+        legs[side].foot.rotation.x = -hinge * 0.1;
+        legs[side].thigh.rotation.z = (side === 'L' ? 1 : -1) * 0.1; // стойка шире
+      }
+      torso.rotation.x = hinge;
+      hips.position.y = HIP - hinge * 0.16;
+      head.rotation.x = -hinge * 0.5; // взгляд вперёд
+      kbProp.position.set(0, 0.56 - Math.cos(a) * 0.68, Math.sin(a) * 0.68);
+      kbProp.rotation.x = a - 0.3;
+      return k;
+    },
+
+    // s — цикл «выпить у бара» [0..1]: чашка ко рту и обратно
+    drink(s) {
+      reset();
+      const sip = (1 - Math.cos(s * Math.PI * 2)) / 2;
+      arms.R.shoulder.rotation.x = -0.35 - 0.4 * sip;
+      arms.R.elbow.rotation.x = -0.55 - 1.75 * sip;
+      arms.L.shoulder.rotation.x = -0.5;   // левая опирается на стойку
+      arms.L.shoulder.rotation.z = -0.15;
+      arms.L.elbow.rotation.x = -0.95;
+      head.rotation.x = -0.22 * sip;       // запрокидывает голову на глотке
+      torso.rotation.x = 0.05;
+      hips.position.x = Math.sin(s * Math.PI * 4) * 0.005; // едва заметно переминается
+      return sip;
     },
 
     // сидит на лавке, дышит; руки на бёдрах
